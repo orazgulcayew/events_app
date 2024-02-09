@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "577558687780",
+    "project_id": "social-event-bbc51",
+    "storage_bucket": "social-event-bbc51.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577558687780:android:93768628d02370efd9e8b1",
+        "android_client_info": {
+          "package_name": "com.example.events_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVfh6oD-sebAk4qo4GtH0g7CrDNkbmXc0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577558687780:android:6180b5cb09481867d9e8b1",
+        "android_client_info": {
+          "package_name": "com.example.social_events"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVfh6oD-sebAk4qo4GtH0g7CrDNkbmXc0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
