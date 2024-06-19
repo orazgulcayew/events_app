@@ -1,7 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:events_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:random_string/random_string.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  'high_importance_channel',
+  "High important",
+  description: "Important",
+  importance: Importance.high,
+  playSound: true,
+);
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+Future<void> _firebaseBackground(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -10,6 +30,16 @@ void main() async {
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackground);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(channel);
+
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+      alert: true, badge: true, sound: true);
   runApp(const MyApp());
 }
 
@@ -24,6 +54,47 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+
+    checkNotificationPermission();
+
+    FirebaseMessaging.instance.getToken().then((value) {
+      print(value);
+    });
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? androidNotification = message.notification?.android;
+
+      if (notification != null && androidNotification != null) {
+        flutterLocalNotificationsPlugin.show(
+            notification.hashCode,
+            notification.title,
+            notification.body,
+            NotificationDetails(
+                android: AndroidNotificationDetails(channel.id, channel.name,
+                    channelDescription: channel.description,
+                    playSound: true,
+                    icon: '@mipmap/ic_launcher')));
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {});
+
+    checkDeviceId().then((id) {
+      FirebaseMessaging.instance.getToken().then((value) {
+        FirebaseFirestore.instance
+            .collection('fcmTokens')
+            .doc(id)
+            .set({'token': value});
+      });
+
+      FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) {
+        FirebaseFirestore.instance
+            .collection('fcmTokens')
+            .doc(id)
+            .update({"token": fcmToken});
+      }).onError((err) {});
+    });
   }
 
   // This widget is the root of your application.
@@ -165,5 +236,23 @@ class _MyAppState extends State<MyApp> {
             }),
       ),
     );
+  }
+
+  Future<String> checkDeviceId() async {
+    final pref = await SharedPreferences.getInstance();
+
+    if (pref.getString('deviceId') == null) {
+      final deviceId = randomString(8);
+      pref.setString('deviceId', deviceId);
+    }
+
+    return pref.getString("deviceId") ?? '';
+  }
+
+  void checkNotificationPermission() async {
+    PermissionStatus permission = await Permission.notification.status;
+    if (permission != PermissionStatus.granted) {
+      Permission.notification.request();
+    }
   }
 }
